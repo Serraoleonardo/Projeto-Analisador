@@ -1,0 +1,12 @@
+# Variáveis de ambiente — NUNCA commitar
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Uploads temporários
+*.pdf
