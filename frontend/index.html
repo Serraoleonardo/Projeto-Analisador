@@ -251,6 +251,56 @@
       padding: 16px 20px; font-size: 14px; color: var(--danger);
     }
 
+    /* ─── Cards copiáveis (gerador de perfil) ────────────── */
+    .builder-area { display: none; flex-direction: column; gap: 20px; }
+    .builder-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 22px;
+    }
+    .builder-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .builder-card-title {
+      display: flex; align-items: center; gap: 8px;
+      font-family: 'DM Serif Display', serif;
+      font-size: 17px;
+    }
+    .builder-card-meta { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+    .copy-btn {
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px;
+      padding: 6px 12px; font-size: 12px; font-weight: 500;
+      cursor: pointer; display: flex; align-items: center; gap: 6px;
+      transition: background 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .copy-btn:hover { border-color: var(--accent); }
+    .copy-btn.copied { background: rgba(52,211,153,0.15); border-color: var(--success); color: var(--success); }
+
+    .builder-text {
+      font-size: 14px; line-height: 1.7; color: var(--text);
+      white-space: pre-wrap;
+      background: var(--bg); border-radius: 8px; padding: 14px 16px;
+    }
+    .builder-card .exp-item { margin-bottom: 18px; }
+    .builder-card .exp-item:last-child { margin-bottom: 0; }
+    .exp-cargo { font-size: 13px; font-weight: 600; color: var(--accent2); margin-bottom: 8px; }
+    .exp-bullets { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .exp-bullets li { font-size: 13px; line-height: 1.5; padding-left: 16px; position: relative; }
+    .exp-bullets li::before { content: '▸'; position: absolute; left: 0; color: var(--accent); }
+
+    .skills-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .skill-chip {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 20px; padding: 6px 14px; font-size: 12.5px;
+    }
+
+    .dicas-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .dicas-list li { font-size: 13px; line-height: 1.5; padding-left: 18px; position: relative; }
+    .dicas-list li::before { content: '💡'; position: absolute; left: 0; font-size: 11px; }
+
+
     @media (max-width: 900px) {
       main { grid-template-columns: 1fr; }
       .panel-form { border-right: none; border-bottom: 1px solid var(--border); }
@@ -271,6 +321,7 @@
   <div class="mode-switcher">
     <button class="mode-btn active" onclick="switchMode('vaga')">🎯 Compatibilidade com vaga</button>
     <button class="mode-btn" onclick="switchMode('perfil')">✨ Otimizar perfil</button>
+    <button class="mode-btn" onclick="switchMode('criar')">🚀 Criar perfil LinkedIn</button>
   </div>
 </header>
 
@@ -374,6 +425,33 @@
       </div>
     </div>
 
+    <!-- ───── MODO 3: Criar perfil LinkedIn ───── -->
+    <div id="form-criar" style="display:none;">
+      <div>
+        <h1 class="panel-title">Crie seu perfil<br/>do <span>LinkedIn</span></h1>
+        <p class="panel-sub">A IA escreve headline, sobre, experiências e habilidades prontos para copiar — usando seu currículo como base.</p>
+      </div>
+
+      <div style="margin-top: 22px;">
+        <label>Currículo (PDF) — obrigatório</label>
+        <div class="drop-zone" id="dropZoneCriar">
+          <input type="file" id="pdfInputCriar" accept=".pdf" />
+          <div class="drop-icon">📄</div>
+          <div class="drop-label">Arraste o PDF aqui ou <strong>clique para selecionar</strong></div>
+          <div class="file-selected" id="fileNameCriar"></div>
+        </div>
+      </div>
+
+      <div style="margin-top: 22px;">
+        <label>Já tem um perfil no LinkedIn? (opcional)</label>
+        <textarea id="currentProfileText" placeholder="Cole aqui o texto do seu perfil atual se quiser que a IA melhore o que já existe. Deixe em branco para criar do zero." style="min-height: 110px;"></textarea>
+      </div>
+
+      <button class="btn-analyze" style="margin-top: 22px; width: 100%;" id="btnBuildLinkedin" onclick="buildLinkedinProfile()">
+        <span>🚀</span> Gerar perfil completo
+      </button>
+    </div>
+
     <div class="error-msg" id="errorMsg"></div>
   </section>
 
@@ -421,6 +499,51 @@
         </div>
       </div>
     </div>
+
+    <!-- ═══ Resultado do MODO 3: Criar perfil LinkedIn (cards copiáveis) ═══ -->
+    <div class="builder-area" id="builderArea">
+
+      <div class="builder-card">
+        <div class="builder-card-header">
+          <div class="builder-card-title">🏷️ Headline</div>
+          <button class="copy-btn" onclick="copyText('builderHeadline', this)"><span>📋</span> Copiar</button>
+        </div>
+        <div class="builder-card-meta" id="headlineCount" style="margin-bottom: 8px;"></div>
+        <div class="builder-text" id="builderHeadline"></div>
+      </div>
+
+      <div class="builder-card">
+        <div class="builder-card-header">
+          <div class="builder-card-title">📝 Sobre</div>
+          <button class="copy-btn" onclick="copyText('builderSobre', this)"><span>📋</span> Copiar</button>
+        </div>
+        <div class="builder-text" id="builderSobre"></div>
+      </div>
+
+      <div class="builder-card">
+        <div class="builder-card-header">
+          <div class="builder-card-title">💼 Experiências</div>
+          <button class="copy-btn" onclick="copyExperiencias(this)"><span>📋</span> Copiar tudo</button>
+        </div>
+        <div id="builderExperiencias"></div>
+      </div>
+
+      <div class="builder-card">
+        <div class="builder-card-header">
+          <div class="builder-card-title">🛠️ Habilidades</div>
+          <button class="copy-btn" onclick="copySkills(this)"><span>📋</span> Copiar lista</button>
+        </div>
+        <div class="skills-row" id="builderSkills"></div>
+      </div>
+
+      <div class="builder-card">
+        <div class="builder-card-header">
+          <div class="builder-card-title">💡 Dicas extras</div>
+        </div>
+        <ul class="dicas-list" id="builderDicas"></ul>
+      </div>
+
+    </div>
   </section>
 </main>
 
@@ -430,10 +553,11 @@
   function switchMode(mode) {
     currentMode = mode;
     document.querySelectorAll('.mode-btn').forEach((b, i) => {
-      b.classList.toggle('active', (i === 0 && mode === 'vaga') || (i === 1 && mode === 'perfil'));
+      b.classList.toggle('active', (i === 0 && mode === 'vaga') || (i === 1 && mode === 'perfil') || (i === 2 && mode === 'criar'));
     });
     document.getElementById('form-vaga').style.display   = mode === 'vaga'   ? 'block' : 'none';
     document.getElementById('form-perfil').style.display = mode === 'perfil' ? 'block' : 'none';
+    document.getElementById('form-criar').style.display  = mode === 'criar'  ? 'block' : 'none';
     setState('empty');
     document.getElementById('errorMsg').style.display = 'none';
   }
@@ -460,6 +584,7 @@
   }
   setupDropZone('dropZoneVaga', 'pdfInputVaga', 'fileNameVaga');
   setupDropZone('dropZonePerfil', 'pdfInputPerfil', 'fileNamePerfil');
+  setupDropZone('dropZoneCriar', 'pdfInputCriar', 'fileNameCriar');
 
   // ─── Sub-tabs: vaga (link/texto) ───────────────────────
   let activeJobTab = 'link';
@@ -548,6 +673,7 @@
     document.getElementById('emptyState').style.display   = state === 'empty'   ? 'flex' : 'none';
     document.getElementById('loadingState').style.display = state === 'loading'  ? 'flex' : 'none';
     document.getElementById('resultArea').style.display   = state === 'result'   ? 'flex' : 'none';
+    document.getElementById('builderArea').style.display  = state === 'builder'  ? 'flex' : 'none';
   }
 
   // ─── Renderiza resultado (compartilhado entre os 3 modos) ───
@@ -678,6 +804,87 @@
         fortesLabel: 'Pontos fortes',
         lacunasLabel: 'Pontos a melhorar'
       });
+
+    } catch (err) {
+      setState('empty');
+      showError(err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ════════════════ Funções de cópia (Modo 3) ════════════════
+  function flashCopied(btn) {
+    const original = btn.innerHTML;
+    btn.innerHTML = '<span>✓</span> Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.innerHTML = original; btn.classList.remove('copied'); }, 1800);
+  }
+
+  function copyText(elId, btn) {
+    const text = document.getElementById(elId).textContent;
+    navigator.clipboard.writeText(text).then(() => flashCopied(btn));
+  }
+
+  let lastBuilderData = null;
+
+  function copyExperiencias(btn) {
+    if (!lastBuilderData) return;
+    const text = lastBuilderData.experiencias.map(exp =>
+      `${exp.cargo_empresa}\n${exp.bullets.map(b => '• ' + b).join('\n')}`
+    ).join('\n\n');
+    navigator.clipboard.writeText(text).then(() => flashCopied(btn));
+  }
+
+  function copySkills(btn) {
+    if (!lastBuilderData) return;
+    navigator.clipboard.writeText(lastBuilderData.habilidades.join(', ')).then(() => flashCopied(btn));
+  }
+
+  function renderBuilderResult(data) {
+    lastBuilderData = data;
+
+    document.getElementById('builderHeadline').textContent = data.headline;
+    document.getElementById('headlineCount').textContent = `${data.headline.length} / 220 caracteres`;
+    document.getElementById('builderSobre').textContent = data.sobre;
+
+    document.getElementById('builderExperiencias').innerHTML = data.experiencias.map(exp => `
+      <div class="exp-item">
+        <div class="exp-cargo">${exp.cargo_empresa}</div>
+        <ul class="exp-bullets">${exp.bullets.map(b => `<li>${b}</li>`).join('')}</ul>
+      </div>
+    `).join('');
+
+    document.getElementById('builderSkills').innerHTML = data.habilidades.map(s => `<span class="skill-chip">${s}</span>`).join('');
+    document.getElementById('builderDicas').innerHTML = data.dicas_extras.map(d => `<li>${d}</li>`).join('');
+
+    setState('builder');
+  }
+
+  // ════════════════ MODO 3: Criar perfil LinkedIn ════════════════
+  async function buildLinkedinProfile() {
+    const file = document.getElementById('pdfInputCriar').files[0];
+    const currentProfile = document.getElementById('currentProfileText').value.trim();
+    const btn = document.getElementById('btnBuildLinkedin');
+    const loadMsg = document.getElementById('loadingMsg');
+
+    document.getElementById('errorMsg').style.display = 'none';
+    if (!file) return showError('Selecione o arquivo PDF do seu currículo.');
+
+    setState('loading');
+    btn.disabled = true;
+    loadMsg.textContent = currentProfile ? 'Melhorando seu perfil atual...' : 'Criando seu perfil do zero...';
+
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('current_profile_text', currentProfile);
+
+      const res  = await fetch('/build-linkedin-profile', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Erro ao gerar o perfil.');
+
+      renderBuilderResult(data);
 
     } catch (err) {
       setState('empty');

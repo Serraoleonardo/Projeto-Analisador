@@ -256,6 +256,78 @@ async def optimize_linkedin(
     return analyze_generic_with_claude(prompt)
 
 
+def build_linkedin_generator_prompt(resume_text: str, current_profile_text: str = "") -> str:
+    """
+    Prompt para o gerador de perfil LinkedIn completo.
+    Diferente do build_linkedin_optimization_prompt() (que só dá feedback),
+    este prompt instrui a IA a ESCREVER o conteúdo pronto para copiar.
+
+    Se current_profile_text vier preenchido, a IA usa o perfil atual como
+    base e melhora; se vier vazio, a IA cria o perfil do zero a partir
+    apenas do currículo.
+    """
+    contexto_perfil_atual = ""
+    if current_profile_text.strip():
+        contexto_perfil_atual = f"""
+PERFIL ATUAL DO LINKEDIN (use como base, mas reescreva e melhore):
+{current_profile_text}
+"""
+
+    return f"""Você é um especialista em personal branding e redação para LinkedIn, focado no mercado brasileiro.
+
+Sua tarefa é ESCREVER o conteúdo completo e pronto para a pessoa copiar e colar diretamente no LinkedIn. Não dê apenas dicas — escreva o texto final, profissional e persuasivo.
+
+CURRÍCULO (fonte de informações sobre experiências, formação e habilidades):
+{resume_text}
+{contexto_perfil_atual}
+
+Responda APENAS com um JSON válido, sem texto adicional, sem markdown, sem backticks.
+
+Regras importantes:
+- A headline deve ter no máximo 220 caracteres, indo direto ao ponto, com cargo + especialidade + valor que entrega.
+- O "sobre" deve ter 3-4 parágrafos curtos, em primeira pessoa, com tom humano e profissional (não robótico), contando a trajetória e o diferencial do candidato.
+- Cada experiência deve ter de 2 a 4 bullets reescritos com verbos de ação e resultados (use números/impacto sempre que o currículo permitir inferir).
+- As habilidades devem ser termos exatos de busca usados por recrutadores na área do candidato.
+
+Retorne exatamente este JSON:
+{{
+  "headline": "<headline pronta para colar, até 220 caracteres>",
+  "sobre": "<texto completo da seção Sobre, com parágrafos separados por \\n\\n>",
+  "experiencias": [
+    {{
+      "cargo_empresa": "<nome do cargo na empresa, conforme currículo>",
+      "bullets": ["<bullet reescrito 1>", "<bullet reescrito 2>", "<bullet reescrito 3>"]
+    }}
+  ],
+  "habilidades": ["<habilidade 1>", "<habilidade 2>", "<habilidade 3>", "<habilidade 4>", "<habilidade 5>", "<habilidade 6>", "<habilidade 7>", "<habilidade 8>"],
+  "dicas_extras": ["<dica sobre foto de perfil>", "<dica sobre banner>", "<dica sobre featured/destaques>", "<dica de frequência de postagem ou interação>"]
+}}"""
+
+
+@app.post("/build-linkedin-profile")
+async def build_linkedin_profile(
+    file: UploadFile = File(...),
+    current_profile_text: str = Form(default="")
+):
+    """
+    Modo 3 - Criar perfil LinkedIn completo.
+    Sempre exige o currículo em PDF (fonte de informações confiáveis).
+    current_profile_text é opcional: se vier preenchido, a IA usa como
+    base para melhorar em vez de criar do zero.
+    """
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Envie um arquivo PDF.")
+
+    file_bytes = await file.read()
+    resume_text = extract_text_from_pdf(file_bytes)
+
+    if not resume_text:
+        raise HTTPException(status_code=422, detail="Não foi possível extrair texto do PDF. Verifique se não é um PDF escaneado.")
+
+    prompt = build_linkedin_generator_prompt(resume_text, current_profile_text.strip())
+    return analyze_generic_with_claude(prompt)
+
+
 @app.post("/fetch-job")
 async def fetch_job(url: str = Form(...)):
     """
