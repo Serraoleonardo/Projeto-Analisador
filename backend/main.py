@@ -136,6 +136,123 @@ def analyze_with_claude(resume_text: str, job_description: str) -> dict:
     return json.loads(raw)
 
 
+def build_resume_optimization_prompt(resume_text: str) -> str:
+    """
+    Prompt para o Modo 2 - aba Currículo.
+    Diferente do build_prompt(), aqui não há vaga — a análise é sobre
+    qualidade geral do currículo: clareza, formatação, impacto, palavras-chave.
+    """
+    return f"""Você é um especialista em RH e carreira, com foco em otimização de currículos para o mercado brasileiro.
+
+Analise o currículo abaixo e responda APENAS com um JSON válido, sem texto adicional, sem markdown, sem backticks.
+
+CURRÍCULO:
+{resume_text}
+
+Avalie clareza, impacto das descrições (uso de verbos de ação e resultados quantificáveis), formatação, e presença de palavras-chave relevantes para a área do candidato.
+
+Retorne exatamente este JSON:
+{{
+  "score": <número de 0 a 100, qualidade geral do currículo>,
+  "nivel": "<Precisa melhorar | Razoável | Bom | Excelente>",
+  "pontos_fortes": ["<ponto forte 1>", "<ponto forte 2>", "<ponto forte 3>"],
+  "pontos_fracos": ["<ponto fraco 1>", "<ponto fraco 2>", "<ponto fraco 3>"],
+  "sugestoes": ["<sugestão concreta e específica 1>", "<sugestão concreta e específica 2>", "<sugestão concreta e específica 3>", "<sugestão concreta e específica 4>"],
+  "resumo": "<parágrafo curto com avaliação geral do currículo>"
+}}"""
+
+
+def build_linkedin_optimization_prompt(profile_text: str) -> str:
+    """
+    Prompt para o Modo 2 - aba LinkedIn.
+    Foco em headline, seção sobre, experiências e como o perfil
+    se posiciona para recrutadores e para o algoritmo de busca do LinkedIn.
+    """
+    return f"""Você é um especialista em personal branding e otimização de perfis do LinkedIn para o mercado brasileiro.
+
+Analise o perfil do LinkedIn abaixo e responda APENAS com um JSON válido, sem texto adicional, sem markdown, sem backticks.
+
+PERFIL DO LINKEDIN:
+{profile_text}
+
+Avalie a headline (título), a seção "Sobre", a descrição das experiências profissionais, e o uso de palavras-chave que ajudam recrutadores a encontrar o perfil.
+
+Retorne exatamente este JSON:
+{{
+  "score": <número de 0 a 100, qualidade geral do perfil>,
+  "nivel": "<Precisa melhorar | Razoável | Bom | Excelente>",
+  "pontos_fortes": ["<ponto forte 1>", "<ponto forte 2>", "<ponto forte 3>"],
+  "pontos_fracos": ["<ponto fraco 1>", "<ponto fraco 2>", "<ponto fraco 3>"],
+  "sugestoes": ["<sugestão concreta e específica 1>", "<sugestão concreta e específica 2>", "<sugestão concreta e específica 3>", "<sugestão concreta e específica 4>"],
+  "resumo": "<parágrafo curto com avaliação geral do perfil>"
+}}"""
+
+
+def analyze_generic_with_claude(prompt: str) -> dict:
+    """
+    Versão genérica de analyze_with_claude() que aceita um prompt já montado.
+    Reutilizada pelos endpoints de otimização de currículo e LinkedIn.
+    """
+    client = anthropic.Anthropic()
+
+    message = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1500,
+        messages=[{"role": "user", "content": prompt}]
+    )
+
+    raw = message.content[0].text.strip()
+
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip()
+
+    return json.loads(raw)
+
+
+@app.post("/optimize-resume")
+async def optimize_resume(file: UploadFile = File(...)):
+    """
+    Modo 2 - aba Currículo.
+    Recebe só o PDF (sem vaga) e devolve feedback geral de qualidade.
+    """
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Envie um arquivo PDF.")
+
+    file_bytes = await file.read()
+    resume_text = extract_text_from_pdf(file_bytes)
+
+    if not resume_text:
+        raise HTTPException(status_code=422, detail="Não foi possível extrair texto do PDF. Verifique se não é um PDF escaneado.")
+
+    prompt = build_resume_optimization_prompt(resume_text)
+    return analyze_generic_with_claude(prompt)
+
+
+@app.post("/optimize-linkedin")
+async def optimize_linkedin(
+    profile_text: str = Form(default=""),
+    profile_url: str = Form(default="")
+):
+    """
+    Modo 2 - aba LinkedIn.
+    Aceita texto colado manualmente OU link do perfil.
+    LinkedIn bloqueia scraping na maioria dos casos — por isso o texto manual
+    é a via mais confiável, mas tentamos o link também.
+    """
+    if profile_url.strip():
+        final_text = await extract_text_from_url(profile_url.strip())
+    elif profile_text.strip():
+        final_text = profile_text.strip()
+    else:
+        raise HTTPException(status_code=400, detail="Cole o texto do perfil ou informe o link.")
+
+    prompt = build_linkedin_optimization_prompt(final_text)
+    return analyze_generic_with_claude(prompt)
+
+
 @app.post("/fetch-job")
 async def fetch_job(url: str = Form(...)):
     """

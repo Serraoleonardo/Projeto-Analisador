@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Resume Analyzer — IA para Currículos</title>
+  <title>Resume Analyzer — IA para Carreira</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     :root {
@@ -31,7 +31,7 @@
 
     /* Header */
     header {
-      padding: 28px 40px;
+      padding: 22px 40px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
@@ -49,16 +49,40 @@
     .logo-text { font-family: 'DM Serif Display', serif; font-size: 20px; letter-spacing: -0.3px; }
     .logo-text span { color: var(--accent2); }
 
+    /* Mode switcher */
+    .mode-switcher {
+      display: flex; gap: 8px;
+      margin-left: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px;
+    }
+    .mode-btn {
+      padding: 8px 16px;
+      background: transparent;
+      border: none;
+      border-radius: 7px;
+      color: var(--muted);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .mode-btn.active { background: var(--accent); color: #fff; font-weight: 600; }
+    .mode-btn:not(.active):hover { color: var(--text); }
+
     /* Layout */
     main { flex: 1; display: grid; grid-template-columns: 420px 1fr; }
 
     /* Painel esquerdo */
     .panel-form {
       border-right: 1px solid var(--border);
-      padding: 40px 36px;
-      display: flex; flex-direction: column; gap: 24px;
+      padding: 36px 36px;
+      display: flex; flex-direction: column; gap: 22px;
     }
-    .panel-title { font-family: 'DM Serif Display', serif; font-size: 26px; line-height: 1.2; letter-spacing: -0.4px; }
+    .panel-title { font-family: 'DM Serif Display', serif; font-size: 24px; line-height: 1.2; letter-spacing: -0.4px; }
     .panel-title span { color: var(--accent2); }
     .panel-sub { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
 
@@ -71,33 +95,33 @@
     /* Drop zone */
     .drop-zone {
       border: 2px dashed var(--border); border-radius: var(--radius);
-      padding: 28px 24px; text-align: center; cursor: pointer;
+      padding: 26px 24px; text-align: center; cursor: pointer;
       transition: border-color 0.2s, background 0.2s; position: relative;
     }
     .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: rgba(108,99,255,0.05); }
     .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-    .drop-icon { font-size: 28px; margin-bottom: 8px; }
+    .drop-icon { font-size: 26px; margin-bottom: 8px; }
     .drop-label { font-size: 13px; color: var(--muted); }
     .drop-label strong { color: var(--accent2); }
     .file-selected { margin-top: 8px; font-size: 12px; color: var(--success); font-family: 'JetBrains Mono', monospace; }
 
-    /* Tabs da vaga */
-    .tabs {
+    /* Tabs internas (sub-modo) */
+    .subtabs {
       display: flex; gap: 0;
       border: 1px solid var(--border); border-radius: var(--radius);
-      overflow: hidden;
+      overflow: hidden; margin-bottom: 4px;
     }
-    .tab-btn {
+    .subtab-btn {
       flex: 1; padding: 10px; background: transparent;
       border: none; color: var(--muted); font-size: 13px;
       font-family: 'Inter', sans-serif; cursor: pointer;
       transition: background 0.15s, color 0.15s;
     }
-    .tab-btn.active { background: var(--accent); color: #fff; font-weight: 600; }
-    .tab-btn:not(.active):hover { background: var(--surface); color: var(--text); }
+    .subtab-btn.active { background: var(--accent); color: #fff; font-weight: 600; }
+    .subtab-btn:not(.active):hover { background: var(--bg); color: var(--text); }
 
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
+    .subtab-panel { display: none; }
+    .subtab-panel.active { display: block; }
 
     /* Input URL */
     .url-wrapper { position: relative; }
@@ -135,7 +159,7 @@
       border: 1px solid var(--border); border-radius: var(--radius);
       color: var(--text); font-family: 'Inter', sans-serif;
       font-size: 14px; line-height: 1.6;
-      padding: 14px 16px; resize: vertical; min-height: 130px;
+      padding: 14px 16px; resize: vertical; min-height: 120px;
       outline: none; transition: border-color 0.2s;
     }
     textarea:focus { border-color: var(--accent); }
@@ -154,7 +178,7 @@
     .btn-analyze:disabled { opacity: 0.45; cursor: not-allowed; }
 
     /* Painel direito */
-    .panel-result { padding: 40px 44px; display: flex; flex-direction: column; gap: 32px; }
+    .panel-result { padding: 40px 44px; display: flex; flex-direction: column; gap: 32px; overflow-y: auto; }
 
     .empty-state {
       flex: 1; display: flex; flex-direction: column;
@@ -198,14 +222,15 @@
       letter-spacing: 0.6px; text-transform: uppercase;
       padding: 3px 10px; border-radius: 20px; margin-bottom: 10px;
     }
-    .nivel-baixo     { background: rgba(248,113,113,0.15); color: var(--danger); }
-    .nivel-medio     { background: rgba(251,191,36,0.15);  color: var(--warning); }
-    .nivel-alto      { background: rgba(52,211,153,0.15);  color: var(--success); }
-    .nivel-excelente { background: rgba(108,99,255,0.15);  color: var(--accent2); }
+    .nivel-baixo, .nivel-precisamelhorar { background: rgba(248,113,113,0.15); color: var(--danger); }
+    .nivel-medio, .nivel-razoavel        { background: rgba(251,191,36,0.15);  color: var(--warning); }
+    .nivel-alto, .nivel-bom              { background: rgba(52,211,153,0.15);  color: var(--success); }
+    .nivel-excelente                     { background: rgba(108,99,255,0.15); color: var(--accent2); }
     .score-resumo { font-size: 13px; color: var(--muted); line-height: 1.6; }
 
     /* Cards */
     .cards-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .cards-row.cols-2 { grid-template-columns: repeat(2, 1fr); }
     .card {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius); padding: 20px;
@@ -229,9 +254,11 @@
     @media (max-width: 900px) {
       main { grid-template-columns: 1fr; }
       .panel-form { border-right: none; border-bottom: 1px solid var(--border); }
-      .cards-row { grid-template-columns: 1fr; }
-      header { padding: 20px 24px; }
-      .panel-form, .panel-result { padding: 28px 24px; }
+      .cards-row, .cards-row.cols-2 { grid-template-columns: 1fr; }
+      header { padding: 18px 20px; flex-wrap: wrap; gap: 12px; }
+      .mode-switcher { margin-left: 0; width: 100%; }
+      .mode-btn { flex: 1; text-align: center; }
+      .panel-form, .panel-result { padding: 24px 22px; }
     }
   </style>
 </head>
@@ -240,58 +267,117 @@
 <header>
   <div class="logo-mark">RA</div>
   <div class="logo-text">Resume<span>Analyzer</span></div>
+
+  <div class="mode-switcher">
+    <button class="mode-btn active" onclick="switchMode('vaga')">🎯 Compatibilidade com vaga</button>
+    <button class="mode-btn" onclick="switchMode('perfil')">✨ Otimizar perfil</button>
+  </div>
 </header>
 
 <main>
+  <!-- ═══════════════ FORMULÁRIO ═══════════════ -->
   <section class="panel-form">
-    <div>
-      <h1 class="panel-title">Analise seu currículo<br/>com <span>IA</span></h1>
-      <p class="panel-sub">Faça upload do PDF e informe a vaga. A IA compara e te diz onde você está forte e o que melhorar.</p>
-    </div>
 
-    <!-- PDF -->
-    <div>
-      <label>Currículo (PDF)</label>
-      <div class="drop-zone" id="dropZone">
-        <input type="file" id="pdfInput" accept=".pdf" />
-        <div class="drop-icon">📄</div>
-        <div class="drop-label">Arraste o PDF aqui ou <strong>clique para selecionar</strong></div>
-        <div class="file-selected" id="fileName"></div>
-      </div>
-    </div>
-
-    <!-- Vaga: tabs link / texto -->
-    <div>
-      <label>Descrição da vaga</label>
-
-      <div class="tabs" style="margin-bottom: 12px;">
-        <button class="tab-btn active" onclick="switchTab('link')">🔗 Colar link</button>
-        <button class="tab-btn" onclick="switchTab('text')">✏️ Colar texto</button>
+    <!-- ───── MODO 1: Compatibilidade com vaga ───── -->
+    <div id="form-vaga">
+      <div>
+        <h1 class="panel-title">Analise seu currículo<br/>com <span>IA</span></h1>
+        <p class="panel-sub">Faça upload do PDF e informe a vaga. A IA compara e te diz onde você está forte e o que melhorar.</p>
       </div>
 
-      <!-- Tab link -->
-      <div class="tab-panel active" id="tab-link">
-        <div class="url-wrapper">
-          <span class="url-icon">🔗</span>
-          <input type="url" id="jobUrl" placeholder="https://linkedin.com/jobs/view/..." oninput="onUrlChange()" />
+      <div style="margin-top: 22px;">
+        <label>Currículo (PDF)</label>
+        <div class="drop-zone" id="dropZoneVaga">
+          <input type="file" id="pdfInputVaga" accept=".pdf" />
+          <div class="drop-icon">📄</div>
+          <div class="drop-label">Arraste o PDF aqui ou <strong>clique para selecionar</strong></div>
+          <div class="file-selected" id="fileNameVaga"></div>
         </div>
-        <div class="url-status" id="urlStatus"></div>
       </div>
 
-      <!-- Tab texto -->
-      <div class="tab-panel" id="tab-text">
-        <textarea id="jobDesc" placeholder="Cole aqui o texto completo da vaga — quanto mais detalhes, melhor a análise..."></textarea>
+      <div style="margin-top: 22px;">
+        <label>Descrição da vaga</label>
+        <div class="subtabs" style="margin-bottom: 12px;">
+          <button class="subtab-btn active" onclick="switchJobTab('link')">🔗 Colar link</button>
+          <button class="subtab-btn" onclick="switchJobTab('text')">✏️ Colar texto</button>
+        </div>
+
+        <div class="subtab-panel active" id="jobtab-link">
+          <div class="url-wrapper">
+            <span class="url-icon">🔗</span>
+            <input type="url" id="jobUrl" placeholder="https://linkedin.com/jobs/view/..." oninput="onUrlChange()" />
+          </div>
+          <div class="url-status" id="urlStatus"></div>
+        </div>
+
+        <div class="subtab-panel" id="jobtab-text">
+          <textarea id="jobDesc" placeholder="Cole aqui o texto completo da vaga..."></textarea>
+        </div>
       </div>
+
+      <button class="btn-analyze" style="margin-top: 22px; width: 100%;" id="btnAnalyzeVaga" onclick="analyzeVaga()">
+        <span>⚡</span> Analisar compatibilidade
+      </button>
     </div>
 
-    <button class="btn-analyze" id="btnAnalyze" onclick="analyze()">
-      <span>⚡</span> Analisar compatibilidade
-    </button>
+    <!-- ───── MODO 2: Otimizar perfil ───── -->
+    <div id="form-perfil" style="display:none;">
+      <div>
+        <h1 class="panel-title">Otimize seu perfil<br/>com <span>IA</span></h1>
+        <p class="panel-sub">Receba feedback de especialista sobre seu currículo ou perfil do LinkedIn — sem comparar com nenhuma vaga específica.</p>
+      </div>
+
+      <div class="subtabs" style="margin-top: 22px;">
+        <button class="subtab-btn active" onclick="switchProfileTab('curriculo')">📄 Currículo</button>
+        <button class="subtab-btn" onclick="switchProfileTab('linkedin')">💼 LinkedIn</button>
+      </div>
+
+      <!-- Sub-aba: Currículo -->
+      <div class="subtab-panel active" id="profiletab-curriculo">
+        <label>Currículo (PDF)</label>
+        <div class="drop-zone" id="dropZonePerfil">
+          <input type="file" id="pdfInputPerfil" accept=".pdf" />
+          <div class="drop-icon">📄</div>
+          <div class="drop-label">Arraste o PDF aqui ou <strong>clique para selecionar</strong></div>
+          <div class="file-selected" id="fileNamePerfil"></div>
+        </div>
+        <button class="btn-analyze" style="margin-top: 18px; width: 100%;" id="btnOptimizeResume" onclick="optimizeResume()">
+          <span>✨</span> Analisar currículo
+        </button>
+      </div>
+
+      <!-- Sub-aba: LinkedIn -->
+      <div class="subtab-panel" id="profiletab-linkedin">
+        <label>Perfil do LinkedIn</label>
+        <div class="subtabs" style="margin-bottom: 12px;">
+          <button class="subtab-btn active" onclick="switchLinkedinTab('text')">✏️ Colar texto</button>
+          <button class="subtab-btn" onclick="switchLinkedinTab('link')">🔗 Colar link</button>
+        </div>
+
+        <div class="subtab-panel active" id="linkedintab-text">
+          <textarea id="linkedinText" placeholder="Cole aqui o texto do seu perfil: headline, sobre, experiências..." style="min-height: 180px;"></textarea>
+        </div>
+
+        <div class="subtab-panel" id="linkedintab-link">
+          <div class="url-wrapper">
+            <span class="url-icon">🔗</span>
+            <input type="url" id="linkedinUrl" placeholder="https://linkedin.com/in/seu-perfil" />
+          </div>
+          <p style="font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.5;">
+            ⚠️ O LinkedIn geralmente bloqueia acesso automático. Se o link não funcionar, use a aba "Colar texto".
+          </p>
+        </div>
+
+        <button class="btn-analyze" style="margin-top: 18px; width: 100%;" id="btnOptimizeLinkedin" onclick="optimizeLinkedin()">
+          <span>✨</span> Analisar perfil
+        </button>
+      </div>
+    </div>
 
     <div class="error-msg" id="errorMsg"></div>
   </section>
 
-  <!-- Resultado -->
+  <!-- ═══════════════ RESULTADO ═══════════════ -->
   <section class="panel-result">
     <div class="empty-state" id="emptyState">
       <div class="empty-icon">🎯</div>
@@ -315,18 +401,18 @@
         </div>
         <div class="score-info">
           <div class="score-nivel" id="scoreNivel">—</div>
-          <h2>Compatibilidade com a vaga</h2>
+          <h2 id="scoreTitle">Resultado da análise</h2>
           <p class="score-resumo" id="scoreResumo"></p>
         </div>
       </div>
 
-      <div class="cards-row">
+      <div class="cards-row" id="cardsRow">
         <div class="card card-fortes">
-          <div class="card-header"><span class="card-icon">✅</span><span class="card-title">Pontos fortes</span></div>
+          <div class="card-header"><span class="card-icon">✅</span><span class="card-title" id="cardFortesTitle">Pontos fortes</span></div>
           <ul id="listaFortes"></ul>
         </div>
         <div class="card card-lacunas">
-          <div class="card-header"><span class="card-icon">⚠️</span><span class="card-title">Lacunas</span></div>
+          <div class="card-header"><span class="card-icon">⚠️</span><span class="card-title" id="cardLacunasTitle">Lacunas</span></div>
           <ul id="listaLacunas"></ul>
         </div>
         <div class="card card-sugestoes">
@@ -339,37 +425,77 @@
 </main>
 
 <script>
-  // ─── Drag & Drop ───────────────────────────────────────
-  const dropZone = document.getElementById('dropZone');
-  const pdfInput = document.getElementById('pdfInput');
-  const fileName  = document.getElementById('fileName');
-
-  pdfInput.addEventListener('change', () => {
-    if (pdfInput.files[0]) fileName.textContent = '📎 ' + pdfInput.files[0].name;
-  });
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-  dropZone.addEventListener('drop', e => {
-    e.preventDefault(); dropZone.classList.remove('dragover');
-    const f = e.dataTransfer.files[0];
-    if (f && f.type === 'application/pdf') {
-      const dt = new DataTransfer(); dt.items.add(f); pdfInput.files = dt.files;
-      fileName.textContent = '📎 ' + f.name;
-    }
-  });
-
-  // ─── Tabs ──────────────────────────────────────────────
-  let activeTab = 'link';
-  function switchTab(tab) {
-    activeTab = tab;
-    document.querySelectorAll('.tab-btn').forEach((b, i) => {
-      b.classList.toggle('active', (i === 0 && tab === 'link') || (i === 1 && tab === 'text'));
+  // ─── Mode switcher ─────────────────────────────────────
+  let currentMode = 'vaga';
+  function switchMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-btn').forEach((b, i) => {
+      b.classList.toggle('active', (i === 0 && mode === 'vaga') || (i === 1 && mode === 'perfil'));
     });
-    document.getElementById('tab-link').classList.toggle('active', tab === 'link');
-    document.getElementById('tab-text').classList.toggle('active', tab === 'text');
+    document.getElementById('form-vaga').style.display   = mode === 'vaga'   ? 'block' : 'none';
+    document.getElementById('form-perfil').style.display = mode === 'perfil' ? 'block' : 'none';
+    setState('empty');
+    document.getElementById('errorMsg').style.display = 'none';
   }
 
-  // ─── Validação da URL em tempo real ───────────────────
+  // ─── Drag & Drop genérico ──────────────────────────────
+  function setupDropZone(zoneId, inputId, fileNameId) {
+    const dropZone = document.getElementById(zoneId);
+    const input     = document.getElementById(inputId);
+    const fileName   = document.getElementById(fileNameId);
+
+    input.addEventListener('change', () => {
+      if (input.files[0]) fileName.textContent = '📎 ' + input.files[0].name;
+    });
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault(); dropZone.classList.remove('dragover');
+      const f = e.dataTransfer.files[0];
+      if (f && f.type === 'application/pdf') {
+        const dt = new DataTransfer(); dt.items.add(f); input.files = dt.files;
+        fileName.textContent = '📎 ' + f.name;
+      }
+    });
+  }
+  setupDropZone('dropZoneVaga', 'pdfInputVaga', 'fileNameVaga');
+  setupDropZone('dropZonePerfil', 'pdfInputPerfil', 'fileNamePerfil');
+
+  // ─── Sub-tabs: vaga (link/texto) ───────────────────────
+  let activeJobTab = 'link';
+  function switchJobTab(tab) {
+    activeJobTab = tab;
+    document.querySelectorAll('#form-vaga .subtabs .subtab-btn').forEach((b, i) => {
+      b.classList.toggle('active', (i === 0 && tab === 'link') || (i === 1 && tab === 'text'));
+    });
+    document.getElementById('jobtab-link').classList.toggle('active', tab === 'link');
+    document.getElementById('jobtab-text').classList.toggle('active', tab === 'text');
+  }
+
+  // ─── Sub-tabs: perfil (currículo/linkedin) ─────────────
+  let activeProfileTab = 'curriculo';
+  function switchProfileTab(tab) {
+    activeProfileTab = tab;
+    document.querySelectorAll('#form-perfil > .subtabs > .subtab-btn').forEach((b, i) => {
+      b.classList.toggle('active', (i === 0 && tab === 'curriculo') || (i === 1 && tab === 'linkedin'));
+    });
+    document.getElementById('profiletab-curriculo').classList.toggle('active', tab === 'curriculo');
+    document.getElementById('profiletab-linkedin').classList.toggle('active', tab === 'linkedin');
+    setState('empty');
+  }
+
+  // ─── Sub-tabs: linkedin (texto/link) ───────────────────
+  let activeLinkedinTab = 'text';
+  function switchLinkedinTab(tab) {
+    activeLinkedinTab = tab;
+    document.querySelectorAll('#profiletab-linkedin .subtabs .subtab-btn').forEach((b, i) => {
+      b.classList.toggle('active', (i === 0 && tab === 'text') || (i === 1 && tab === 'link'));
+    });
+    document.getElementById('linkedintab-text').classList.toggle('active', tab === 'text');
+    document.getElementById('linkedintab-link').classList.toggle('active', tab === 'link');
+  }
+
+  // ─── Validação da URL em tempo real (vaga) ─────────────
   let urlDebounce = null;
   function onUrlChange() {
     const url = document.getElementById('jobUrl').value.trim();
@@ -384,11 +510,14 @@
   }
 
   // ─── Score ring ────────────────────────────────────────
-  function animateScore(score, nivel) {
+  function animateScore(score, nivelKey) {
     const circle = document.getElementById('scoreCircle');
     const numEl  = document.getElementById('scoreNum');
-    const colors = { 'Baixo': '#F87171', 'Médio': '#FBBF24', 'Alto': '#34D399', 'Excelente': '#6C63FF' };
-    circle.style.stroke = colors[nivel] || '#6C63FF';
+    const colors = {
+      'Baixo': '#F87171', 'Médio': '#FBBF24', 'Alto': '#34D399', 'Excelente': '#6C63FF',
+      'Precisa melhorar': '#F87171', 'Razoável': '#FBBF24', 'Bom': '#34D399'
+    };
+    circle.style.stroke = colors[nivelKey] || '#6C63FF';
     setTimeout(() => { circle.style.strokeDashoffset = 251.2 - (score / 100) * 251.2; }, 50);
     let cur = 0; const step = score / 40;
     const t = setInterval(() => {
@@ -402,63 +531,12 @@
     document.getElementById(ulId).innerHTML = items.map(i => `<li>${i}</li>`).join('');
   }
 
-  // ─── Análise principal ─────────────────────────────────
-  async function analyze() {
-    const file    = pdfInput.files[0];
-    const jobUrl  = document.getElementById('jobUrl').value.trim();
-    const jobDesc = document.getElementById('jobDesc').value.trim();
-    const errEl   = document.getElementById('errorMsg');
-    const btn     = document.getElementById('btnAnalyze');
-    const loadMsg = document.getElementById('loadingMsg');
-
-    errEl.style.display = 'none';
-
-    if (!file) return showError('Selecione um arquivo PDF.');
-    if (activeTab === 'link' && !jobUrl)  return showError('Cole o link da vaga.');
-    if (activeTab === 'text' && !jobDesc) return showError('Cole o texto da vaga.');
-
-    setState('loading');
-    btn.disabled = true;
-
-    try {
-      const form = new FormData();
-      form.append('file', file);
-
-      if (activeTab === 'link') {
-        loadMsg.textContent = 'Lendo a vaga no link...';
-        form.append('job_url', jobUrl);
-        form.append('job_description', '');
-      } else {
-        loadMsg.textContent = 'Analisando com IA...';
-        form.append('job_url', '');
-        form.append('job_description', jobDesc);
-      }
-
-      loadMsg.textContent = 'Analisando com IA...';
-
-      const res  = await fetch('/analyze', { method: 'POST', body: form });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Erro na análise.');
-
-      document.getElementById('scoreResumo').textContent = data.resumo;
-      const nivelMap = { 'Baixo': 'nivel-baixo', 'Médio': 'nivel-medio', 'Alto': 'nivel-alto', 'Excelente': 'nivel-excelente' };
-      const nivelEl = document.getElementById('scoreNivel');
-      nivelEl.textContent = data.nivel_compatibilidade;
-      nivelEl.className   = 'score-nivel ' + (nivelMap[data.nivel_compatibilidade] || 'nivel-medio');
-
-      fillList('listaFortes',    data.pontos_fortes);
-      fillList('listaLacunas',   data.lacunas);
-      fillList('listaSugestoes', data.sugestoes);
-
-      setState('result');
-      animateScore(data.score, data.nivel_compatibilidade);
-
-    } catch (err) {
-      setState('empty');
-      showError(err.message);
-    } finally {
-      btn.disabled = false;
-    }
+  function nivelClass(nivel) {
+    const map = {
+      'Baixo': 'nivel-baixo', 'Médio': 'nivel-medio', 'Alto': 'nivel-alto', 'Excelente': 'nivel-excelente',
+      'Precisa melhorar': 'nivel-precisamelhorar', 'Razoável': 'nivel-razoavel', 'Bom': 'nivel-bom'
+    };
+    return map[nivel] || 'nivel-medio';
   }
 
   function showError(msg) {
@@ -470,6 +548,143 @@
     document.getElementById('emptyState').style.display   = state === 'empty'   ? 'flex' : 'none';
     document.getElementById('loadingState').style.display = state === 'loading'  ? 'flex' : 'none';
     document.getElementById('resultArea').style.display   = state === 'result'   ? 'flex' : 'none';
+  }
+
+  // ─── Renderiza resultado (compartilhado entre os 3 modos) ───
+  function renderResult(data, opts) {
+    document.getElementById('scoreTitle').textContent = opts.title;
+    document.getElementById('cardFortesTitle').textContent = opts.fortesLabel;
+    document.getElementById('cardLacunasTitle').textContent = opts.lacunasLabel;
+    document.getElementById('scoreResumo').textContent = data.resumo;
+
+    const nivel = data.nivel_compatibilidade || data.nivel;
+    const nivelEl = document.getElementById('scoreNivel');
+    nivelEl.textContent = nivel;
+    nivelEl.className   = 'score-nivel ' + nivelClass(nivel);
+
+    fillList('listaFortes',    data.pontos_fortes);
+    fillList('listaLacunas',   data.lacunas || data.pontos_fracos);
+    fillList('listaSugestoes', data.sugestoes);
+
+    setState('result');
+    animateScore(data.score, nivel);
+  }
+
+  // ════════════════ MODO 1: Compatibilidade com vaga ════════════════
+  async function analyzeVaga() {
+    const file    = document.getElementById('pdfInputVaga').files[0];
+    const jobUrl  = document.getElementById('jobUrl').value.trim();
+    const jobDesc = document.getElementById('jobDesc').value.trim();
+    const btn     = document.getElementById('btnAnalyzeVaga');
+    const loadMsg = document.getElementById('loadingMsg');
+
+    document.getElementById('errorMsg').style.display = 'none';
+
+    if (!file) return showError('Selecione um arquivo PDF.');
+    if (activeJobTab === 'link' && !jobUrl)  return showError('Cole o link da vaga.');
+    if (activeJobTab === 'text' && !jobDesc) return showError('Cole o texto da vaga.');
+
+    setState('loading');
+    btn.disabled = true;
+    loadMsg.textContent = activeJobTab === 'link' ? 'Lendo a vaga no link...' : 'Analisando com IA...';
+
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('job_url', activeJobTab === 'link' ? jobUrl : '');
+      form.append('job_description', activeJobTab === 'text' ? jobDesc : '');
+
+      loadMsg.textContent = 'Analisando com IA...';
+      const res  = await fetch('/analyze', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Erro na análise.');
+
+      renderResult(data, {
+        title: 'Compatibilidade com a vaga',
+        fortesLabel: 'Pontos fortes',
+        lacunasLabel: 'Lacunas'
+      });
+
+    } catch (err) {
+      setState('empty');
+      showError(err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ════════════════ MODO 2a: Otimizar currículo ════════════════
+  async function optimizeResume() {
+    const file = document.getElementById('pdfInputPerfil').files[0];
+    const btn  = document.getElementById('btnOptimizeResume');
+    const loadMsg = document.getElementById('loadingMsg');
+
+    document.getElementById('errorMsg').style.display = 'none';
+    if (!file) return showError('Selecione um arquivo PDF.');
+
+    setState('loading');
+    btn.disabled = true;
+    loadMsg.textContent = 'Analisando seu currículo...';
+
+    try {
+      const form = new FormData();
+      form.append('file', file);
+
+      const res  = await fetch('/optimize-resume', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Erro na análise.');
+
+      renderResult(data, {
+        title: 'Qualidade do currículo',
+        fortesLabel: 'Pontos fortes',
+        lacunasLabel: 'Pontos a melhorar'
+      });
+
+    } catch (err) {
+      setState('empty');
+      showError(err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ════════════════ MODO 2b: Otimizar LinkedIn ════════════════
+  async function optimizeLinkedin() {
+    const text = document.getElementById('linkedinText').value.trim();
+    const url  = document.getElementById('linkedinUrl').value.trim();
+    const btn  = document.getElementById('btnOptimizeLinkedin');
+    const loadMsg = document.getElementById('loadingMsg');
+
+    document.getElementById('errorMsg').style.display = 'none';
+
+    if (activeLinkedinTab === 'text' && !text) return showError('Cole o texto do seu perfil.');
+    if (activeLinkedinTab === 'link' && !url)  return showError('Cole o link do seu perfil.');
+
+    setState('loading');
+    btn.disabled = true;
+    loadMsg.textContent = 'Analisando seu perfil...';
+
+    try {
+      const form = new FormData();
+      form.append('profile_text', activeLinkedinTab === 'text' ? text : '');
+      form.append('profile_url',  activeLinkedinTab === 'link' ? url  : '');
+
+      const res  = await fetch('/optimize-linkedin', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Erro na análise.');
+
+      renderResult(data, {
+        title: 'Qualidade do perfil LinkedIn',
+        fortesLabel: 'Pontos fortes',
+        lacunasLabel: 'Pontos a melhorar'
+      });
+
+    } catch (err) {
+      setState('empty');
+      showError(err.message);
+    } finally {
+      btn.disabled = false;
+    }
   }
 </script>
 </body>
