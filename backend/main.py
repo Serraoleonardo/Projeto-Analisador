@@ -191,16 +191,21 @@ Retorne exatamente este JSON:
 }}"""
 
 
-def analyze_generic_with_claude(prompt: str) -> dict:
+def analyze_generic_with_claude(prompt: str, max_tokens: int = 2000) -> dict:
     """
     Versão genérica de analyze_with_claude() que aceita um prompt já montado.
-    Reutilizada pelos endpoints de otimização de currículo e LinkedIn.
+    Reutilizada pelos endpoints de otimização de currículo, LinkedIn e
+    geração de perfil completo.
+
+    max_tokens é configurável porque o gerador de perfil LinkedIn produz
+    um JSON bem maior (headline + sobre + experiências + habilidades +
+    dicas) do que os outros modos, que só retornam feedback resumido.
     """
     client = anthropic.Anthropic()
 
     message = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=1500,
+        max_tokens=max_tokens,
         messages=[{"role": "user", "content": prompt}]
     )
 
@@ -212,7 +217,15 @@ def analyze_generic_with_claude(prompt: str) -> dict:
             raw = raw[4:]
         raw = raw.strip()
 
-    return json.loads(raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        # Resposta veio cortada (provavelmente atingiu o limite de tokens).
+        # Erro mais claro para o usuário em vez de um JSONDecodeError cru.
+        raise HTTPException(
+            status_code=502,
+            detail="A IA gerou uma resposta incompleta. Tente novamente — geralmente funciona na segunda tentativa."
+        )
 
 
 @app.post("/optimize-resume")
@@ -325,7 +338,7 @@ async def build_linkedin_profile(
         raise HTTPException(status_code=422, detail="Não foi possível extrair texto do PDF. Verifique se não é um PDF escaneado.")
 
     prompt = build_linkedin_generator_prompt(resume_text, current_profile_text.strip())
-    return analyze_generic_with_claude(prompt)
+    return analyze_generic_with_claude(prompt, max_tokens=3000)
 
 
 @app.post("/fetch-job")
